@@ -1,18 +1,29 @@
 using MyBackendApp.Configurations;
 
-// var builder = WebApplication.CreateBuilder(args);
-
-// // Configure Kestrel with custom ports
-// builder.WebHost.ConfigureKestrel(options =>
-// {
-//     options.ListenAnyIP(5000); // HTTP
-//     options.ListenAnyIP(7195, listenOptions => listenOptions.UseHttps()); // HTTPS
-// });
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Add CORS policy to allow all origins, methods, and headers for development purposes
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// Add services to the container
+builder.Services.Configure<DatabaseSettings>(
+    builder.Configuration.GetSection("DatabaseSettings"));
+
+builder.Services.AddSingleton<ListItemService>();
+
+// Configure OpenAPI if needed
+builder.Services.AddOpenApi();
 
 // Check if the environment is not Development
 if (!builder.Environment.IsDevelopment())
@@ -36,34 +47,6 @@ else
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-app.UseAuthorization();
-
-app.MapControllers();
-
-
-
-// Add CORS policy to allow all origins, methods, and headers for development purposes
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
-// Add services to the container
-builder.Services.Configure<DatabaseSettings>(
-    builder.Configuration.GetSection("DatabaseSettings"));
-
-builder.Services.AddSingleton<ListItemService>();
-
-// Configure OpenAPI if needed
-builder.Services.AddOpenApi();
-
-
 // Use CORS in the request pipeline
 app.UseCors("AllowAll");
 
@@ -73,6 +56,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+// Configure the HTTP request pipeline.
+app.MapControllers();
 
 app.MapGet("/", () => "Welcome!");
 
@@ -112,5 +100,3 @@ app.MapDelete("/list-items/{id}", async (string id, ListItemService service) =>
 
 // Run the app
 app.Run();
-
-
