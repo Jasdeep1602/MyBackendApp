@@ -1,13 +1,47 @@
 using MyBackendApp.Configurations;
 
+// var builder = WebApplication.CreateBuilder(args);
+
+// // Configure Kestrel with custom ports
+// builder.WebHost.ConfigureKestrel(options =>
+// {
+//     options.ListenAnyIP(5000); // HTTP
+//     options.ListenAnyIP(7195, listenOptions => listenOptions.UseHttps()); // HTTPS
+// });
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel with custom ports
-builder.WebHost.ConfigureKestrel(options =>
+// Add services to the container.
+builder.Services.AddControllers();
+
+// Check if the environment is not Development
+if (!builder.Environment.IsDevelopment())
 {
-    options.ListenAnyIP(5000); // HTTP
-    options.ListenAnyIP(7195, listenOptions => listenOptions.UseHttps()); // HTTPS
-});
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(5000); // HTTP port
+    });
+}
+else
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(5000); // HTTP port
+        options.ListenAnyIP(5001, listenOptions =>
+        {
+            listenOptions.UseHttps(); // HTTPS port for Development
+        });
+    });
+}
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+app.UseAuthorization();
+
+app.MapControllers();
+
+
 
 // Add CORS policy to allow all origins, methods, and headers for development purposes
 builder.Services.AddCors(options =>
@@ -29,7 +63,6 @@ builder.Services.AddSingleton<ListItemService>();
 // Configure OpenAPI if needed
 builder.Services.AddOpenApi();
 
-var app = builder.Build();
 
 // Use CORS in the request pipeline
 app.UseCors("AllowAll");
